@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 # ── Feed registry ────────────────────────────────────────────────────────────
 
 FEEDS: list[dict] = [
-    # Hacker News — top-voted SaaS stories (points > 5 filters noise)
+    # Hacker News — top-voted stories across AI, SaaS, and tech disruption
     {
         "url": "https://hnrss.org/newest?q=SaaS&points=5",
         "name": "Hacker News",
@@ -29,6 +29,36 @@ FEEDS: list[dict] = [
     },
     {
         "url": "https://hnrss.org/newest?q=AI+SaaS&points=3",
+        "name": "Hacker News",
+        "source_tag": "hackernews",
+    },
+    {
+        "url": "https://hnrss.org/newest?q=LLM&points=5",
+        "name": "Hacker News",
+        "source_tag": "hackernews",
+    },
+    {
+        "url": "https://hnrss.org/newest?q=artificial+intelligence&points=10",
+        "name": "Hacker News",
+        "source_tag": "hackernews",
+    },
+    {
+        "url": "https://hnrss.org/newest?q=GPT+OR+Claude+OR+Gemini&points=5",
+        "name": "Hacker News",
+        "source_tag": "hackernews",
+    },
+    {
+        "url": "https://hnrss.org/newest?q=enterprise+software&points=5",
+        "name": "Hacker News",
+        "source_tag": "hackernews",
+    },
+    {
+        "url": "https://hnrss.org/newest?q=AI+startup&points=3",
+        "name": "Hacker News",
+        "source_tag": "hackernews",
+    },
+    {
+        "url": "https://hnrss.org/newest?q=open+source+AI&points=5",
         "name": "Hacker News",
         "source_tag": "hackernews",
     },
@@ -56,6 +86,31 @@ FEEDS: list[dict] = [
     {
         "url": "https://www.reddit.com/r/singularity/hot/.rss?limit=15",
         "name": "r/singularity",
+        "source_tag": "reddit",
+    },
+    {
+        "url": "https://www.reddit.com/r/MachineLearning/hot/.rss?limit=25",
+        "name": "r/MachineLearning",
+        "source_tag": "reddit",
+    },
+    {
+        "url": "https://www.reddit.com/r/OpenAI/hot/.rss?limit=20",
+        "name": "r/OpenAI",
+        "source_tag": "reddit",
+    },
+    {
+        "url": "https://www.reddit.com/r/ClaudeAI/hot/.rss?limit=20",
+        "name": "r/ClaudeAI",
+        "source_tag": "reddit",
+    },
+    {
+        "url": "https://www.reddit.com/r/startups/hot/.rss?limit=15",
+        "name": "r/startups",
+        "source_tag": "reddit",
+    },
+    {
+        "url": "https://www.reddit.com/r/technology/hot/.rss?limit=15",
+        "name": "r/technology",
         "source_tag": "reddit",
     },
     # Substacks / blogs
@@ -147,6 +202,32 @@ FEEDS: list[dict] = [
         "url": "https://www.reddit.com/r/ChatGPT/hot/.rss?limit=15",
         "name": "r/ChatGPT",
         "source_tag": "reddit",
+    },
+    # ── Podcasts ─────────────────────────────────────────────────────────────
+    {
+        "url": "https://api.substack.com/feed/podcast/69345.rss",
+        "name": "Dwarkesh Patel",
+        "source_tag": "podcast",
+    },
+    {
+        "url": "https://feeds.transistor.fm/technology-brother",
+        "name": "TBPN",
+        "source_tag": "podcast",
+    },
+    {
+        "url": "https://feeds.megaphone.fm/profgmarkets",
+        "name": "Prof G Markets",
+        "source_tag": "podcast",
+    },
+    {
+        "url": "https://investlikethebest.libsyn.com/rss",
+        "name": "Invest Like the Best",
+        "source_tag": "podcast",
+    },
+    {
+        "url": "https://tedseides.libsyn.com/rss",
+        "name": "Capital Allocators",
+        "source_tag": "podcast",
     },
 ]
 

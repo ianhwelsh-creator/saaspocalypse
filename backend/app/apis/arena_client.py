@@ -37,6 +37,7 @@ ORG_PREFIXES = {
     "mistral": "Mistral",
     "microsoft": "Microsoft",
     "cohere": "Cohere",
+    "bytedance": "ByteDance",
 }
 
 # Map model name prefixes to organizations
@@ -53,6 +54,9 @@ MODEL_ORG_MAP = {
     "mistral": "Mistral",
     "phi": "Microsoft",
     "command": "Cohere",
+    "doubao": "ByteDance",
+    "dola": "ByteDance",
+    "seed": "ByteDance",
 }
 
 
@@ -113,6 +117,8 @@ def _clean_model_name(raw_name: str) -> str:
             cleaned.append("Llama")
         elif wl == "deepseek":
             cleaned.append("DeepSeek")
+        elif wl in ("doubao", "dola"):
+            cleaned.append("Doubao")
         # Version-like numbers: try to merge adjacent number segments
         # e.g. "4" "6" -> "4.6", "4" "5" -> "4.5"
         elif word.replace(".", "").isdigit():

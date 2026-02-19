@@ -83,6 +83,10 @@ class ReferenceCompany(BaseModel):
     bullets: list[str]
     logo_url: str | None = None
 
+class ScoreFactors(BaseModel):
+    x_factors: dict[str, int] = {}
+    y_factors: dict[str, int] = {}
+
 class EvaluationResponse(BaseModel):
     id: int | None = None
     company_name: str
@@ -92,6 +96,7 @@ class EvaluationResponse(BaseModel):
     diligence: list[str]
     x_score: float
     y_score: float
+    score_factors: ScoreFactors | None = None
     created_at: datetime | None = None
 
 
@@ -116,6 +121,7 @@ class CohortMemberSummary(BaseModel):
     zone: str
     x_score: float
     y_score: float
+    score_factors: ScoreFactors | None = None
     key_risk: str
     ai_summary: str
 

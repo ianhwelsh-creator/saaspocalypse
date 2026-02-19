@@ -46,6 +46,7 @@ class Evaluation(Base):
     diligence: Mapped[str] = mapped_column(Text, nullable=False)  # JSON list
     x_score: Mapped[float] = mapped_column(Float, nullable=False)
     y_score: Mapped[float] = mapped_column(Float, nullable=False)
+    score_factors: Mapped[str | None] = mapped_column(Text, nullable=True)  # JSON: {x_factors, y_factors}
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 
 

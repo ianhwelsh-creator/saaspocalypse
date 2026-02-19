@@ -2,7 +2,7 @@ const SOURCE_STYLES: Record<string, { color: string; label: string }> = {
   hackernews: { color: '#ea580c', label: 'HN' },
   techcrunch: { color: '#1a9d3f', label: 'TC' },
   reddit: { color: '#d63939', label: 'RD' },
-  newsapi: { color: '#2b7fd4', label: 'MS' },
+  podcast: { color: '#8b5cf6', label: 'POD' },
   twitter: { color: '#0284c7', label: 'X' },
   rss: { color: '#d49b1a', label: 'RSS' },
   // Institutional sources
@@ -15,7 +15,7 @@ const SOURCE_STYLES: Record<string, { color: string; label: string }> = {
 }
 
 export default function SourceBadge({ source }: { source: string }) {
-  const style = SOURCE_STYLES[source] || { color: '#8a8480', label: source.toUpperCase().slice(0, 3) }
+  const style = SOURCE_STYLES[source] || { color: '#9ca3af', label: source.toUpperCase().slice(0, 3) }
   return (
     <span
       className="text-[10px] font-mono font-medium px-1.5 py-0.5 rounded-md"

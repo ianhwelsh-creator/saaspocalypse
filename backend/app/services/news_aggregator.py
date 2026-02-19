@@ -15,25 +15,11 @@ from datetime import datetime, timezone, timedelta
 
 from rapidfuzz import fuzz
 
-from app.apis.news_client import NewsApiClient
 from app.apis.twitter_client import TwitterClient
 from app.apis.rss_client import RSSClient
 from app.apis.institutional_client import InstitutionalClient
 
 logger = logging.getLogger(__name__)
-
-NEWS_QUERIES = [
-    "SaaS AI disruption",
-    "AI replacing software",
-    "SaaS earnings AI impact",
-    "AI startup funding",
-]
-
-FUNDRAISING_QUERIES = [
-    "AI startup funding round",
-    "AI company bond offering",
-    "frontier lab fundraising",
-]
 
 # ── Scoring constants ────────────────────────────────────────────────────────
 
@@ -62,6 +48,11 @@ SOURCE_AUTHORITY: dict[str, int] = {
     "r/artificial": 9,
     "r/singularity": 9,
     "r/ChatGPT": 9,
+    "r/MachineLearning": 12,
+    "r/OpenAI": 10,
+    "r/ClaudeAI": 10,
+    "r/startups": 9,
+    "r/technology": 8,
     # New feeds (Feb 2026)
     "Tomasz Tunguz": 20,
     "The SaaS Playbook": 18,
@@ -73,15 +64,21 @@ SOURCE_AUTHORITY: dict[str, int] = {
     "One Useful Thing": 16,
     "Simon Willison": 16,
     "Newcomer": 18,
+    # Podcasts
+    "Dwarkesh Patel": 19,
+    "TBPN": 18,
+    "Prof G Markets": 17,
+    "Invest Like the Best": 18,
+    "Capital Allocators": 17,
 }
 DEFAULT_AUTHORITY = 8
 
 
 # ── Content type classification ──────────────────────────────────────────────
 
-LONG_FORM_SOURCES = {"rss", "techcrunch", "newsapi"}
+LONG_FORM_SOURCES = {"rss", "techcrunch"}
 LONG_FORM_INSTITUTIONAL = {"wsj", "reuters", "ft", "bloomberg", "cnbc", "institutional"}
-SHORT_FORM_SOURCES = {"twitter", "reddit", "hackernews"}
+SHORT_FORM_SOURCES = {"twitter", "reddit", "hackernews", "podcast"}
 
 
 def _classify_content_type(item: dict) -> str:
@@ -157,8 +154,12 @@ def _compute_popularity(item: dict) -> int:
         return 0
 
     # Editorial sources — give a base popularity for being published at all
-    if source in ("techcrunch", "rss", "newsapi"):
+    if source in ("techcrunch", "rss"):
         return 5
+
+    # Podcasts — base popularity for being a curated show
+    if source == "podcast":
+        return 8
 
     return 0
 
@@ -208,13 +209,11 @@ class NewsAggregator:
     def __init__(
         self,
         rss_client: RSSClient,
-        news_client: NewsApiClient,
         twitter_client: TwitterClient,
         institutional_client: InstitutionalClient | None = None,
         claude_client=None,
     ):
         self._rss = rss_client
-        self._news = news_client
         self._twitter = twitter_client
         self._institutional = institutional_client
         self._claude = claude_client
@@ -260,10 +259,6 @@ class NewsAggregator:
         hn_items = await self._rss.search_feeds_for_company(company_name)
         results.extend(hn_items)
 
-        # Paid (if key set): NewsAPI search
-        news_items = await self._news.search_news(company_name, page_size=limit)
-        results.extend(news_items)
-
         for item in results:
             item["category"] = self._categorize(item.get("title", ""))
             item["score"] = _score_item(item)
@@ -307,14 +302,9 @@ class NewsAggregator:
             except Exception as e:
                 logger.error(f"Institutional news fetch failed: {e}")
 
-        # ── Free: RSS feeds (HN, TechCrunch, Reddit, Substacks, blogs) ──
+        # ── Free: RSS feeds (HN, TechCrunch, Reddit, Substacks, blogs, podcasts) ──
         rss_items = await self._rss.fetch_all_feeds()
         all_items.extend(rss_items)
-
-        # ── Paid/optional: NewsAPI ───────────────────────────────────────
-        for query in NEWS_QUERIES:
-            items = await self._news.search_news(query, page_size=10)
-            all_items.extend(items)
 
         # ── Paid/optional: Twitter/X (cost-optimised) ──────────────────
         # Only curated accounts — keyword search dropped to save API reads.
@@ -355,14 +345,7 @@ class NewsAggregator:
         """Refresh fundraising-specific news."""
         items: list[dict] = []
 
-        # NewsAPI fundraising queries (if key set)
-        for query in FUNDRAISING_QUERIES:
-            news = await self._news.search_news(query, page_size=10)
-            for item in news:
-                item["category"] = "fundraising"
-            items.extend(news)
-
-        # Also pull fundraising-tagged items from the main RSS cache
+        # Pull fundraising-tagged items from the main RSS cache
         if self._cached_all:
             for item in self._cached_all:
                 if item.get("category") == "fundraising":

@@ -1,8 +1,9 @@
-import { useState, useMemo } from 'react'
+import { useState } from 'react'
 import type { NewsItem } from '../types'
 import { formatRelative } from '../utils/format'
 import SourceBadge from './SourceBadge'
 import TweetCard from './TweetCard'
+import PodcastCard from './PodcastCard'
 
 // ── Per-tab source filters ───────────────────────────────────────────────────
 const ARTICLE_SOURCES = [
@@ -10,12 +11,12 @@ const ARTICLE_SOURCES = [
   { key: 'institutional', label: 'Inst.' },
   { key: 'techcrunch', label: 'TC' },
   { key: 'rss', label: 'RSS' },
-  { key: 'newsapi', label: 'MS' },
 ]
 
 const QUICKHIT_SOURCES = [
   { key: '', label: 'All' },
   { key: 'twitter', label: 'X' },
+  { key: 'podcast', label: 'Pods' },
   { key: 'reddit', label: 'Reddit' },
   { key: 'hackernews', label: 'HN' },
 ]
@@ -24,10 +25,6 @@ const QUICKHIT_SOURCES = [
 const INSTITUTIONAL_SOURCES = new Set(['wsj', 'reuters', 'ft', 'bloomberg', 'cnbc', 'institutional'])
 
 const ZONE_COLORS: Record<string, { color: string; bg: string }> = {
-  'Fortress Zone': { color: '#1a9d3f', bg: '#1a9d3f14' },
-  'Dead Zone': { color: '#dc2626', bg: '#dc262614' },
-  'Compression Zone': { color: '#d49b1a', bg: '#d49b1a14' },
-  'Adaptation Zone': { color: '#2b7fd4', bg: '#2b7fd414' },
   'Macro': { color: '#8b5cf6', bg: '#8b5cf614' },
   'Earnings': { color: '#6b7280', bg: '#6b728014' },
 }
@@ -36,41 +33,27 @@ function scoreColor(score: number): string {
   if (score >= 50) return '#1a9d3f'
   if (score >= 35) return '#2b7fd4'
   if (score >= 20) return '#d49b1a'
-  return '#8a8480'
+  return '#9ca3af'
 }
 
 function scoreBg(score: number): string {
   if (score >= 50) return '#1a9d3f14'
   if (score >= 35) return '#2b7fd414'
   if (score >= 20) return '#d49b1a14'
-  return '#8a848010'
+  return '#9ca3af10'
 }
 
 interface Props {
-  items: NewsItem[]
+  articles: NewsItem[]
+  quickhits: NewsItem[]
   loading: boolean
 }
 
-export default function NewsFeed({ items, loading }: Props) {
+export default function NewsFeed({ articles, quickhits, loading }: Props) {
   const [tab, setTab] = useState<'articles' | 'quickhits'>('articles')
   const [articleSource, setArticleSource] = useState('')
   const [quickhitSource, setQuickhitSource] = useState('')
   const [sortBy, setSortBy] = useState<'score' | 'recent'>('score')
-
-  // Split items by content_type
-  const { articles, quickhits } = useMemo(() => {
-    const arts: NewsItem[] = []
-    const qh: NewsItem[] = []
-    for (const item of items) {
-      if (item.content_type === 'short_form') {
-        qh.push(item)
-      } else {
-        // long_form or unclassified → articles
-        arts.push(item)
-      }
-    }
-    return { articles: arts, quickhits: qh }
-  }, [items])
 
   // Current active source filter
   const source = tab === 'articles' ? articleSource : quickhitSource
@@ -182,6 +165,8 @@ export default function NewsFeed({ items, loading }: Props) {
             filtered.map((item, i) =>
               tab === 'quickhits' && item.source === 'twitter' ? (
                 <TweetCard key={`${item.url}-${i}`} item={item} />
+              ) : tab === 'quickhits' && item.source === 'podcast' ? (
+                <PodcastCard key={`${item.url}-${i}`} item={item} />
               ) : (
                 <a
                   key={`${item.url}-${i}`}
@@ -201,13 +186,13 @@ export default function NewsFeed({ items, loading }: Props) {
                   )}
                   <div className="flex items-center gap-2 mt-2 flex-wrap">
                     <SourceBadge source={item.source} />
-                    {/* Zone tag */}
-                    {item.zone_tag && (
+                    {/* Zone tag — only show Macro and Earnings */}
+                    {item.zone_tag && ZONE_COLORS[item.zone_tag] && (
                       <span
                         className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full uppercase tracking-wide"
                         style={{
-                          color: ZONE_COLORS[item.zone_tag]?.color || '#6b7280',
-                          backgroundColor: ZONE_COLORS[item.zone_tag]?.bg || '#6b728014',
+                          color: ZONE_COLORS[item.zone_tag].color,
+                          backgroundColor: ZONE_COLORS[item.zone_tag].bg,
                         }}
                       >
                         {item.zone_tag}

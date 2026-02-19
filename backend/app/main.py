@@ -11,7 +11,6 @@ from app.database import init_db
 from app.apis.stock_client import StockClient
 from app.apis.claude_client import ClaudeClient
 from app.apis.arena_client import ArenaClient
-from app.apis.news_client import NewsApiClient
 from app.apis.twitter_client import TwitterClient
 from app.apis.rss_client import RSSClient
 from app.apis.email_client import EmailClient
@@ -40,7 +39,6 @@ async def lifespan(app: FastAPI):
     logger.info("Initializing API clients...")
     stock_client = StockClient(cache_ttl_minutes=settings.STOCK_CACHE_TTL_MINUTES)
     arena_client = ArenaClient()
-    news_client = NewsApiClient(api_key=settings.MEDIASTACK_KEY)
     twitter_client = TwitterClient(bearer_token=settings.TWITTER_BEARER_TOKEN)
     rss_client = RSSClient()
     institutional_client = InstitutionalClient()
@@ -55,7 +53,6 @@ async def lifespan(app: FastAPI):
     arena_service = ArenaService(arena_client)
     news_aggregator = NewsAggregator(
         rss_client=rss_client,
-        news_client=news_client,
         twitter_client=twitter_client,
         institutional_client=institutional_client,
         claude_client=claude_client,
@@ -102,7 +99,6 @@ async def lifespan(app: FastAPI):
 
     # Shutdown
     scheduler.stop()
-    await news_client.close()
     await twitter_client.close()
     await rss_client.close()
     await arena_client.close()

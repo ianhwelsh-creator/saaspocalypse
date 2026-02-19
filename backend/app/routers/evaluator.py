@@ -48,6 +48,12 @@ async def get_evaluation(eval_id: int, db: AsyncSession = Depends(get_db)):
     evaluation = await db.get(Evaluation, eval_id)
     if not evaluation:
         raise HTTPException(status_code=404, detail="Evaluation not found")
+    score_factors = None
+    if evaluation.score_factors:
+        try:
+            score_factors = json.loads(evaluation.score_factors)
+        except (json.JSONDecodeError, TypeError):
+            pass
     return {
         "id": evaluation.id,
         "company_name": evaluation.company_name,
@@ -57,5 +63,6 @@ async def get_evaluation(eval_id: int, db: AsyncSession = Depends(get_db)):
         "diligence": json.loads(evaluation.diligence),
         "x_score": evaluation.x_score,
         "y_score": evaluation.y_score,
+        "score_factors": score_factors,
         "created_at": evaluation.created_at.isoformat() if evaluation.created_at else None,
     }

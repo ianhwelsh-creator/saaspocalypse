@@ -22,6 +22,8 @@ export interface BasketTimeSeriesResponse {
   series: BasketDataPoint[]
   summaries: BasketSummary[]
   baseline_date: string
+  ticker_rationale?: Record<string, string[]>
+  ticker_changes?: Record<string, number>
 }
 
 export interface StockDetail {
@@ -84,6 +86,29 @@ export interface WatchlistItem {
   added_at: string
 }
 
+// --- Score Factors ---
+
+export interface XFactors {
+  regulatory_overlay: number
+  multi_stakeholder: number
+  judgment_intensity: number
+  process_depth: number
+  institutional_knowledge: number
+}
+
+export interface YFactors {
+  regulatory_lock_in: number
+  data_gravity: number
+  network_effects: number
+  portability_resistance: number
+  proprietary_enrichment: number
+}
+
+export interface ScoreFactors {
+  x_factors: XFactors
+  y_factors: YFactors
+}
+
 // --- Evaluator ---
 
 export interface ReferenceCompany {
@@ -105,6 +130,7 @@ export interface EvaluationResult {
   diligence: string[]
   x_score: number
   y_score: number
+  score_factors?: ScoreFactors | null
   created_at?: string
 }
 
@@ -126,6 +152,7 @@ export interface CohortMemberSummary {
   zone: string
   x_score: number
   y_score: number
+  score_factors?: ScoreFactors | null
   key_risk: string
   ai_summary: string
 }

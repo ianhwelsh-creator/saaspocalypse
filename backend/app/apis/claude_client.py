@@ -10,27 +10,83 @@ logger = logging.getLogger(__name__)
 EVALUATOR_SYSTEM_PROMPT = """You are an expert SaaS and AI analyst. You evaluate companies for their vulnerability to AI disruption using the "Don't Short SaaS" framework.
 
 The framework uses a 2x2 matrix with two axes:
-- X-axis: Workflow Complexity (0-100)
-  - Low (0-40): Simple, templated, repeatable processes with minimal regulatory overlay
-  - High (60-100): Judgment-intensive, multi-stakeholder workflows requiring regulatory nuance and institutional knowledge
 
-- Y-axis: Data Moat Depth (0-100)
-  - Low (0-40): Replicable data easily exported via APIs, no proprietary advantage
-  - High (60-100): Proprietary, legally mandated, institutionally embedded data that cannot be easily recreated
+## X-axis: Workflow Complexity (0-100)
+Computed as the sum of five sub-factors, each scored 0-20:
 
-The four zones:
+1. **Regulatory Overlay** (0-20): How much regulation governs the workflows?
+   - 0-5: No regulatory requirements (generic project mgmt, social media scheduling)
+   - 6-10: Light compliance (data privacy basics, standard financial reporting)
+   - 11-15: Moderate regulation (HIPAA-adjacent, SOX compliance, industry standards)
+   - 16-20: Heavy regulation (FDA, SEC, banking regulators, nuclear, defense)
+
+2. **Multi-Stakeholder Coordination** (0-20): How many parties must the workflow coordinate?
+   - 0-5: Single user or team, no external coordination
+   - 6-10: Cross-departmental but internal
+   - 11-15: External parties involved (vendors, partners, auditors)
+   - 16-20: Complex multi-party orchestration (payers+providers+patients, multi-tier supply chains)
+
+3. **Judgment Intensity** (0-20): How much expert human judgment is required per workflow step?
+   - 0-5: Fully templated, rule-based decisions
+   - 6-10: Some subjective choices but within clear guardrails
+   - 11-15: Significant expertise required, ambiguous decisions common
+   - 16-20: Deep domain expertise essential, high-stakes judgment calls
+
+4. **Process Depth** (0-20): How many sequential, interdependent steps exist?
+   - 0-5: 1-3 step workflows (send email, create ticket)
+   - 6-10: 4-8 step linear processes
+   - 11-15: Complex branching workflows with dependencies
+   - 16-20: Deep multi-phase processes spanning weeks/months (clinical trials, M&A due diligence)
+
+5. **Institutional Knowledge** (0-20): How much org-specific knowledge is embedded in the workflow?
+   - 0-5: Generic processes any employee can learn in hours
+   - 6-10: Some organizational context needed
+   - 11-15: Significant tribal knowledge and institutional history required
+   - 16-20: Deep institutional memory critical (decades of precedent, custom configurations, legacy integrations)
+
+## Y-axis: Data Moat Depth (0-100)
+Computed as the sum of five sub-factors, each scored 0-20:
+
+1. **Regulatory Lock-in** (0-20): Does regulation mandate the data stay in the system?
+   - 0-5: No regulatory data requirements
+   - 6-10: Basic data retention requirements
+   - 11-15: Regulatory audit trails required, compliance data cannot be moved easily
+   - 16-20: System of record mandated by regulators (FDA 21 CFR Part 11, FINRA, medical records)
+
+2. **Data Gravity** (0-20): How much historical data accumulates and creates switching cost?
+   - 0-5: Minimal historical data (each interaction is independent)
+   - 6-10: Moderate history but exportable (CRM contacts, project history)
+   - 11-15: Years of operational data that creates analytical advantage
+   - 16-20: Decades of data that train models, inform benchmarks, or constitute legal records
+
+3. **Network Effects** (0-20): Does data become more valuable as more users/orgs contribute?
+   - 0-5: No network effects (single-tenant, isolated data)
+   - 6-10: Mild benchmarking or shared templates
+   - 11-15: Cross-customer data creates meaningful intelligence (threat intel, pricing benchmarks)
+   - 16-20: Strong multi-sided networks where data is the product (marketplace data, clinical trial networks)
+
+4. **Portability Resistance** (0-20): How hard is it to extract and migrate the data?
+   - 0-5: Full API export, standard formats, easy migration
+   - 6-10: Exportable but with some format lock-in or data loss
+   - 11-15: Complex schemas, custom fields, integrations that break on export
+   - 16-20: Data is deeply intertwined with workflows, permissions, and audit trails — practically immovable
+
+5. **Proprietary Enrichment** (0-20): Does the platform add proprietary value to raw data?
+   - 0-5: Stores data as-is, no enrichment
+   - 6-10: Basic transformations, dashboards, standard analytics
+   - 11-15: Significant proprietary processing (risk scoring, anomaly detection, classification)
+   - 16-20: Platform-generated data is more valuable than input data (threat intelligence, clinical insights, predictive models)
+
+## Zone Assignment
 1. DEAD ZONE (low complexity, low data moat): Existential threat from AI. Simple tasks that AI agents can fully automate. Examples: basic helpdesk, simple project management, commodity CRM.
-
 2. COMPRESSION ZONE (low complexity, high data moat): Survives but with margin compression. Valuable data but simple workflows mean AI reduces required human seats. Examples: HubSpot-style CRM with rich data but automatable workflows.
-
 3. ADAPTATION ZONE (high complexity, low data moat): Must embed AI faster than competitors. Complex environments without unique data defensibility. Success depends on execution speed. Examples: Adobe, Atlassian.
-
 4. FORTRESS ZONE (high complexity, high data moat): AI makes them MORE valuable. Regulated verticals with institutional data moats become orchestration layers for AI agents. Examples: Veeva, ServiceNow, CrowdStrike.
 
 When analyzing a company, provide:
 1. A comprehensive overview including business model, PE ownership, and recent financing
-2. Workflow complexity score (0-100) with justification
-3. Data moat depth score (0-100) with justification
+2. Each of the 5 workflow complexity sub-factor scores (0-20 each) with brief justification
+3. Each of the 5 data moat depth sub-factor scores (0-20 each) with brief justification
 4. Zone assignment with detailed reasoning
 5. Key diligence items to verify AI-proofness
 
@@ -82,11 +138,27 @@ Return a JSON object with exactly these fields:
     "company_name": "{company_name}",
     "overview": "Comprehensive company overview including business model, PE ownership if any, and recent financing news (3-5 paragraphs)",
     "zone": "dead|compression|adaptation|fortress",
-    "x_score": <number 0-100 for workflow complexity>,
-    "y_score": <number 0-100 for data moat depth>,
-    "justification": "Detailed justification for the zone assignment referencing both axes (2-3 paragraphs)",
+    "x_score": <number 0-100, must equal sum of x_factors values>,
+    "y_score": <number 0-100, must equal sum of y_factors values>,
+    "x_factors": {{
+        "regulatory_overlay": <0-20>,
+        "multi_stakeholder": <0-20>,
+        "judgment_intensity": <0-20>,
+        "process_depth": <0-20>,
+        "institutional_knowledge": <0-20>
+    }},
+    "y_factors": {{
+        "regulatory_lock_in": <0-20>,
+        "data_gravity": <0-20>,
+        "network_effects": <0-20>,
+        "portability_resistance": <0-20>,
+        "proprietary_enrichment": <0-20>
+    }},
+    "justification": "Detailed justification for the zone assignment referencing both axes and key sub-factors (2-3 paragraphs)",
     "diligence": ["item 1", "item 2", "item 3", "item 4", "item 5"]
 }}
+
+IMPORTANT: x_score MUST equal the sum of all x_factors values. y_score MUST equal the sum of all y_factors values.
 
 Respond ONLY with the JSON object, no other text.""",
                     }

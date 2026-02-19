@@ -21,6 +21,16 @@ class EvaluatorService:
         """Analyze a company and cache the result."""
         result = await self._claude.analyze_company(company_name)
 
+        # Build score_factors JSON from Claude's response
+        score_factors = None
+        x_factors = result.get("x_factors")
+        y_factors = result.get("y_factors")
+        if x_factors or y_factors:
+            score_factors = json.dumps({
+                "x_factors": x_factors or {},
+                "y_factors": y_factors or {},
+            })
+
         # Save to DB
         evaluation = Evaluation(
             company_name=result.get("company_name", company_name),
@@ -30,22 +40,13 @@ class EvaluatorService:
             diligence=json.dumps(result.get("diligence", [])),
             x_score=result.get("x_score", 50),
             y_score=result.get("y_score", 50),
+            score_factors=score_factors,
         )
         db.add(evaluation)
         await db.commit()
         await db.refresh(evaluation)
 
-        return {
-            "id": evaluation.id,
-            "company_name": evaluation.company_name,
-            "zone": evaluation.zone,
-            "overview": evaluation.overview,
-            "justification": evaluation.justification,
-            "diligence": json.loads(evaluation.diligence),
-            "x_score": evaluation.x_score,
-            "y_score": evaluation.y_score,
-            "created_at": evaluation.created_at.isoformat() if evaluation.created_at else None,
-        }
+        return self._evaluation_to_dict(evaluation)
 
     async def get_history(self, db: AsyncSession, limit: int = 20) -> list[dict]:
         """Get past evaluations."""
@@ -53,21 +54,31 @@ class EvaluatorService:
         result = await db.execute(stmt)
         evaluations = result.scalars().all()
 
-        return [
-            {
-                "id": e.id,
-                "company_name": e.company_name,
-                "zone": e.zone,
-                "overview": e.overview,
-                "justification": e.justification,
-                "diligence": json.loads(e.diligence),
-                "x_score": e.x_score,
-                "y_score": e.y_score,
-                "created_at": e.created_at.isoformat() if e.created_at else None,
-            }
-            for e in evaluations
-        ]
+        return [self._evaluation_to_dict(e) for e in evaluations]
 
     def get_reference_companies(self) -> list[dict]:
         """Return reference companies for the 2x2 matrix."""
         return REFERENCE_COMPANIES
+
+    @staticmethod
+    def _evaluation_to_dict(e: Evaluation) -> dict:
+        """Convert an Evaluation ORM instance to a serializable dict."""
+        d = {
+            "id": e.id,
+            "company_name": e.company_name,
+            "zone": e.zone,
+            "overview": e.overview,
+            "justification": e.justification,
+            "diligence": json.loads(e.diligence),
+            "x_score": e.x_score,
+            "y_score": e.y_score,
+            "created_at": e.created_at.isoformat() if e.created_at else None,
+        }
+        if e.score_factors:
+            try:
+                d["score_factors"] = json.loads(e.score_factors)
+            except (json.JSONDecodeError, TypeError):
+                d["score_factors"] = None
+        else:
+            d["score_factors"] = None
+        return d

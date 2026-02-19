@@ -146,7 +146,7 @@ export default function MatrixChart({ referenceCompanies, evaluation, cohortComp
         className="block"
       >
         {/* Background */}
-        <rect x={0} y={0} width={W} height={H} fill="#faf8f5" rx={8} />
+        <rect x={0} y={0} width={W} height={H} fill="#ffffff" rx={8} />
 
         {/* Quadrant backgrounds */}
         <rect x={pad.left} y={toY(50)} width={plotW / 2} height={plotH / 2}
@@ -160,22 +160,22 @@ export default function MatrixChart({ referenceCompanies, evaluation, cohortComp
 
         {/* Grid lines */}
         <line x1={toX(50)} y1={pad.top} x2={toX(50)} y2={pad.top + plotH}
-          stroke="#e0dbd5" strokeDasharray="4 4" />
+          stroke="#e5e7eb" strokeDasharray="4 4" />
         <line x1={pad.left} y1={toY(50)} x2={pad.left + plotW} y2={toY(50)}
-          stroke="#e0dbd5" strokeDasharray="4 4" />
+          stroke="#e5e7eb" strokeDasharray="4 4" />
 
         {/* Axes */}
         <line x1={pad.left} y1={pad.top + plotH} x2={pad.left + plotW} y2={pad.top + plotH}
-          stroke="#c7c1ba" />
+          stroke="#d1d5db" />
         <line x1={pad.left} y1={pad.top} x2={pad.left} y2={pad.top + plotH}
-          stroke="#c7c1ba" />
+          stroke="#d1d5db" />
 
         {/* Axis labels */}
-        <text x={W / 2} y={H - 8} textAnchor="middle" fill="#8a8480" fontSize={12}
+        <text x={W / 2} y={H - 8} textAnchor="middle" fill="#9ca3af" fontSize={12}
           fontFamily="Inter, sans-serif">
           Workflow Complexity →
         </text>
-        <text x={14} y={H / 2} textAnchor="middle" fill="#8a8480" fontSize={12}
+        <text x={14} y={H / 2} textAnchor="middle" fill="#9ca3af" fontSize={12}
           fontFamily="Inter, sans-serif" transform={`rotate(-90, 14, ${H / 2})`}>
           Data Moat Depth →
         </text>
@@ -218,7 +218,7 @@ export default function MatrixChart({ referenceCompanies, evaluation, cohortComp
                 fill="white" fontSize={15} fontWeight="700">
                 ★
               </text>
-              <text x={ex} y={ey + R + 18} textAnchor="middle" fill="#2d2b29"
+              <text x={ex} y={ey + R + 18} textAnchor="middle" fill="#1a1a2e"
                 fontSize={12} fontWeight="bold" fontFamily="Inter, sans-serif">
                 {evaluation.company_name}
               </text>
@@ -262,7 +262,7 @@ export default function MatrixChart({ referenceCompanies, evaluation, cohortComp
                   height: R * 2,
                   borderRadius: '50%',
                   background: 'white',
-                  border: `${isHovered ? 2.5 : 1.5}px solid ${isHovered ? zoneColor : '#e0dbd5'}`,
+                  border: `${isHovered ? 2.5 : 1.5}px solid ${isHovered ? zoneColor : '#e5e7eb'}`,
                   boxShadow: isHovered
                     ? `0 0 0 3px ${zoneColor}30, 0 0 16px ${zoneColor}50, 0 0 32px ${zoneColor}25`
                     : '0 1px 3px rgba(0,0,0,0.06)',
@@ -357,7 +357,7 @@ export default function MatrixChart({ referenceCompanies, evaluation, cohortComp
                   transform: 'translateX(-50%)',
                   fontSize: 10,
                   fontWeight: 600,
-                  color: '#2d2b29',
+                  color: '#1a1a2e',
                   fontFamily: 'Inter, sans-serif',
                 }}
               >

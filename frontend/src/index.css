@@ -3,19 +3,19 @@
 @tailwind utilities;
 
 :root {
-  /* Arena.ai light-mode design tokens */
-  --surface-primary: #faf8f5;
+  /* Light-mode design tokens — clean white */
+  --surface-primary: #ffffff;
   --surface-secondary: #ffffff;
-  --surface-tertiary: #f2ede6;
-  --surface-raised: #ece6dc;
+  --surface-tertiary: #f8f9fa;
+  --surface-raised: #f1f3f5;
 
-  --text-primary: #2d2b29;
-  --text-secondary: #413d39;
-  --text-tertiary: #666058;
-  --text-muted: #8a8480;
+  --text-primary: #1a1a2e;
+  --text-secondary: #3d3d5c;
+  --text-tertiary: #6b7280;
+  --text-muted: #9ca3af;
 
-  --border-faint: #edebe9;
-  --border-medium: #e0dbd5;
+  --border-faint: #f0f0f0;
+  --border-medium: #e5e7eb;
 
   --brand-blue: #2b7fd4;
   --brand-green: #1a9d3f;
@@ -60,4 +60,27 @@ body {
 
 .animate-slide-in-right {
   animation: slide-in-right 0.25s ease-out;
+}
+
+/* Scrolling stock ticker tape */
+@keyframes ticker-scroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.ticker-scroll {
+  animation: ticker-scroll 69s linear infinite;
+  width: max-content;
+}
+
+.ticker-scroll:hover {
+  animation-play-state: paused;
+}
+
+.ticker-track {
+  flex-shrink: 0;
 }

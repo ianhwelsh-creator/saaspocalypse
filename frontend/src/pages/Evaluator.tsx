@@ -12,6 +12,13 @@ const ZONE_PILL: Record<string, { bg: string; text: string }> = {
   dead: { bg: 'bg-[#fae8e8]', text: 'text-[#d63939]' },
 }
 
+const ZONE_LABELS: Record<string, string> = {
+  fortress: 'Fortress Zone',
+  adaptation: 'Adaptation Zone',
+  compression: 'Compression Zone',
+  dead: 'Dead Zone',
+}
+
 export default function Evaluator() {
   const [companyName, setCompanyName] = useState('')
   const [evaluation, setEvaluation] = useState<EvaluationResult | null>(null)
@@ -86,36 +93,70 @@ export default function Evaluator() {
       {/* Results */}
       {evaluation && (
         <div className="space-y-6">
+          <button
+            onClick={() => setEvaluation(null)}
+            className="flex items-center gap-1.5 text-[13px] text-arena-muted hover:text-arena-text transition-colors"
+          >
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M19 12H5" />
+              <path d="M12 19l-7-7 7-7" />
+            </svg>
+            Back to evaluations
+          </button>
           <CompanyOverview overview={evaluation.overview} />
           <VulnerabilityCard evaluation={evaluation} referenceCompanies={referenceCompanies} />
           <DiligenceList items={evaluation.diligence} />
         </div>
       )}
 
-      {/* History */}
+      {/* History — grouped by zone */}
       {history.length > 0 && !evaluation && (
         <div className="bg-surface-secondary rounded-xl border border-arena-border p-6">
-          <h3 className="text-[15px] font-semibold text-arena-text mb-3">
-            Recent Evaluations
+          <h3 className="text-[15px] font-semibold text-arena-text mb-4">
+            Past Evaluations
           </h3>
-          <div className="space-y-1.5">
-            {history.map((e) => {
-              const pill = ZONE_PILL[e.zone] || ZONE_PILL.dead
-              return (
-                <button
-                  key={e.id}
-                  onClick={() => setEvaluation(e)}
-                  className="w-full text-left bg-surface-tertiary/50 rounded-lg p-3 hover:bg-surface-tertiary transition-colors flex items-center justify-between group"
-                >
-                  <span className="text-[13px] text-arena-text-secondary group-hover:text-arena-text transition-colors">
-                    {e.company_name}
-                  </span>
-                  <span className={`text-[11px] font-medium px-2.5 py-0.5 rounded-md ${pill.bg} ${pill.text}`}>
-                    {e.zone}
-                  </span>
-                </button>
-              )
-            })}
+          <div className="space-y-5">
+            {(['fortress', 'adaptation', 'compression', 'dead'] as const)
+              .map((zone) => {
+                const items = history.filter((e) => e.zone === zone)
+                if (items.length === 0) return null
+                const pill = ZONE_PILL[zone] || ZONE_PILL.dead
+                return (
+                  <div key={zone}>
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-md ${pill.bg} ${pill.text}`}>
+                        {ZONE_LABELS[zone]}
+                      </span>
+                      <span className="text-[11px] text-arena-muted">
+                        ({items.length})
+                      </span>
+                    </div>
+                    <div className="space-y-1">
+                      {items.map((e) => (
+                        <button
+                          key={e.id}
+                          onClick={() => setEvaluation(e)}
+                          className="w-full text-left bg-surface-tertiary/50 rounded-lg px-3.5 py-2.5 hover:bg-surface-tertiary transition-colors flex items-center justify-between group"
+                        >
+                          <span className="text-[13px] text-arena-text-secondary group-hover:text-arena-text transition-colors">
+                            {e.company_name}
+                          </span>
+                          <div className="flex items-center gap-3">
+                            <span className="text-[11px] text-arena-muted font-mono">
+                              {e.x_score}/{e.y_score}
+                            </span>
+                            {e.created_at && (
+                              <span className="text-[10px] text-arena-muted">
+                                {new Date(e.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                              </span>
+                            )}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )
+              })}
           </div>
         </div>
       )}

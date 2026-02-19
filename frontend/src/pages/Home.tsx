@@ -5,38 +5,31 @@ import BasketLegend from '../components/BasketLegend'
 import ArenaChart from '../components/ArenaChart'
 import NewsFeed from '../components/NewsFeed'
 import FundraisingTable from '../components/FundraisingTable'
+import StockTicker from '../components/StockTicker'
 
 export default function Home() {
   const baskets = usePolling<BasketTimeSeriesResponse | null>(
     '/api/stocks/baskets', 900_000, null
   )
   const arena = usePolling<ArenaModel[]>('/api/arena/rankings', 3_600_000, [])
-  const news = usePolling<NewsItem[]>('/api/news?limit=100', 300_000, [])
+  const articles = usePolling<NewsItem[]>('/api/news?content_type=long_form&limit=100', 300_000, [])
+  const quickhits = usePolling<NewsItem[]>('/api/news?content_type=short_form&limit=150', 300_000, [])
   const fundraising = usePolling<NewsItem[]>('/api/news/fundraising?limit=15', 300_000, [])
 
   return (
     <div className="h-full flex flex-col">
-      {/* Header bar */}
-      <div className="flex items-center justify-between px-6 py-3 border-b border-arena-border flex-shrink-0">
-        <div>
-          <h1 className="text-[15px] font-semibold text-arena-text">
-            Overview
-          </h1>
-        </div>
-        <div className="flex items-center gap-4 text-[12px] text-arena-muted">
-          <span>{new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}</span>
-          <span className="flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-arena-positive" />
-            {news.data.length} stories
-          </span>
-        </div>
-      </div>
+      {/* Scrolling stock ticker tape */}
+      <StockTicker summaries={baskets.data?.summaries ?? []} />
 
       {/* 3-column layout */}
       <div className="flex-1 flex min-h-0">
         {/* LEFT — News Feed */}
         <div className="w-1/4 border-r border-arena-border flex flex-col min-h-0">
-          <NewsFeed items={news.data} loading={news.loading} />
+          <NewsFeed
+            articles={articles.data}
+            quickhits={quickhits.data}
+            loading={articles.loading || quickhits.loading}
+          />
         </div>
 
         {/* CENTER — Charts */}
@@ -45,7 +38,11 @@ export default function Home() {
           <div className="border-b border-arena-border">
             <BasketChart data={baskets.data} loading={baskets.loading} />
             {baskets.data?.summaries && (
-              <BasketLegend summaries={baskets.data.summaries} />
+              <BasketLegend
+                summaries={baskets.data.summaries}
+                tickerRationale={baskets.data.ticker_rationale}
+                tickerChanges={baskets.data.ticker_changes}
+              />
             )}
           </div>
           {/* Arena */}

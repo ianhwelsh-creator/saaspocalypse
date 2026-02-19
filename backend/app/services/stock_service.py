@@ -4,7 +4,7 @@ import logging
 from datetime import datetime
 
 from app.apis.stock_client import StockClient
-from app.seed.baskets import BASKETS, BASELINE_DATE
+from app.seed.baskets import BASKETS, BASELINE_DATE, TICKER_RATIONALE
 
 logger = logging.getLogger(__name__)
 
@@ -90,10 +90,25 @@ class StockService:
                 "tickers": basket["tickers"],
             })
 
+        # Per-ticker % change from baseline for tooltips
+        ticker_changes: dict[str, float] = {}
+        for ticker in all_tickers:
+            base = baseline_prices.get(ticker)
+            if not base or base <= 0:
+                continue
+            # Find latest close for this ticker
+            for d in reversed(sorted_dates):
+                close = price_lookup.get(ticker, {}).get(d)
+                if close:
+                    ticker_changes[ticker] = round((close / base - 1) * 100, 2)
+                    break
+
         return {
             "series": series,
             "summaries": summaries,
             "baseline_date": BASELINE_DATE,
+            "ticker_rationale": TICKER_RATIONALE,
+            "ticker_changes": ticker_changes,
         }
 
     async def get_basket_detail(self, zone: str) -> list[dict]:

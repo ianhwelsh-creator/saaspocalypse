@@ -1,11 +1,13 @@
 """Cohort Evaluator API endpoints."""
 
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.models.schemas import CohortCreateRequest, CohortEditRequest
 from app.routers._deps import get_cohort_service
+from app.services.report_service import ReportService
 
 router = APIRouter(prefix="/api/cohorts", tags=["cohorts"])
 
@@ -51,6 +53,35 @@ async def get_cohort_matrix(cohort_id: int, db: AsyncSession = Depends(get_db)):
     if not service:
         raise HTTPException(status_code=503, detail="Claude API not configured")
     return await service.get_cohort_matrix(cohort_id, db)
+
+
+@router.get("/{cohort_id}/report")
+async def get_cohort_report(cohort_id: int, db: AsyncSession = Depends(get_db)):
+    """Generate and return a PDF report for the cohort."""
+    service = get_cohort_service()
+    if not service:
+        raise HTTPException(status_code=503, detail="Claude API not configured")
+
+    data = await service.get_cohort_report_data(cohort_id, db)
+    if not data:
+        raise HTTPException(status_code=404, detail="Cohort not found or not complete")
+
+    report_service = ReportService()
+    pdf_bytes = report_service.generate_cohort_report(
+        cohort_name=data["cohort_name"],
+        cohort_created_at=data["cohort_created_at"],
+        members=data["members"],
+        evaluations=data["evaluations"],
+    )
+
+    safe_name = data["cohort_name"].replace(" ", "_").replace("/", "-")
+    filename = f"{safe_name}_report.pdf"
+
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 @router.put("/{cohort_id}")

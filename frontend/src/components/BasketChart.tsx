@@ -11,6 +11,7 @@ const LINES = [
   { key: 'adaptation_zone', label: 'Adaptation', color: '#2b7fd4' },
   { key: 'fortress_zone', label: 'Fortress', color: '#1a9d3f' },
   { key: 'ai_etfs', label: 'AI ETFs', color: '#8b5cf6' },
+  { key: 'sp500', label: 'S&P 500', color: '#6b7280' },
 ]
 
 const RANGES = [
@@ -94,35 +95,35 @@ export default function BasketChart({ data, loading }: Props) {
 
       <ResponsiveContainer width="100%" height={280}>
         <LineChart data={chartData}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#e0dbd5" strokeOpacity={0.6} />
+          <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" strokeOpacity={0.6} />
           <XAxis
             dataKey="date"
-            tick={{ fill: '#8a8480', fontSize: 11 }}
+            tick={{ fill: '#9ca3af', fontSize: 11 }}
             tickFormatter={(v: string) => v.slice(5)}
-            axisLine={{ stroke: '#e0dbd5' }}
-            tickLine={{ stroke: '#e0dbd5' }}
+            axisLine={{ stroke: '#e5e7eb' }}
+            tickLine={{ stroke: '#e5e7eb' }}
           />
           <YAxis
             domain={[yMin, yMax]}
-            tick={{ fill: '#8a8480', fontSize: 11 }}
-            axisLine={{ stroke: '#e0dbd5' }}
-            tickLine={{ stroke: '#e0dbd5' }}
+            tick={{ fill: '#9ca3af', fontSize: 11 }}
+            axisLine={{ stroke: '#e5e7eb' }}
+            tickLine={{ stroke: '#e5e7eb' }}
           />
-          <ReferenceLine y={100} stroke="#c7c1ba" strokeDasharray="4 4" />
+          <ReferenceLine y={100} stroke="#d1d5db" strokeDasharray="4 4" />
           <Tooltip
             contentStyle={{
               backgroundColor: '#ffffff',
-              border: '1px solid #edebe9',
+              border: '1px solid #f0f0f0',
               borderRadius: '8px',
               fontSize: '12px',
               fontFamily: 'Inter, sans-serif',
-              color: '#2d2b29',
+              color: '#1a1a2e',
               boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
             }}
-            labelStyle={{ color: '#666058', fontSize: '11px' }}
+            labelStyle={{ color: '#6b7280', fontSize: '11px' }}
           />
           <Legend
-            wrapperStyle={{ fontSize: '11px', paddingTop: '10px', color: '#666058' }}
+            wrapperStyle={{ fontSize: '11px', paddingTop: '10px', color: '#6b7280' }}
           />
           {LINES.map((line) => (
             <Line

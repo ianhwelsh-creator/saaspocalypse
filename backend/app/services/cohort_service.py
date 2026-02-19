@@ -33,6 +33,9 @@ DOMAIN_OVERRIDES: dict[str, str] = {
     "monday.com": "monday.com",
     "five9": "five9.com",
     "8x8": "8x8.com",
+    "wood mackenzie": "woodmac.com",
+    "watchguard technologies": "watchguard.com",
+    "watchguard": "watchguard.com",
 }
 
 
@@ -119,12 +122,19 @@ class CohortService:
         for member, evaluation in rows:
             diligence = json.loads(evaluation.diligence) if evaluation.diligence else []
             overview = evaluation.overview or ""
+            score_factors = None
+            if evaluation.score_factors:
+                try:
+                    score_factors = json.loads(evaluation.score_factors)
+                except (json.JSONDecodeError, TypeError):
+                    pass
             members.append({
                 "evaluation_id": evaluation.id,
                 "company_name": evaluation.company_name,
                 "zone": evaluation.zone,
                 "x_score": evaluation.x_score,
                 "y_score": evaluation.y_score,
+                "score_factors": score_factors,
                 "key_risk": diligence[0] if diligence else "N/A",
                 "ai_summary": (overview[:150] + "...") if len(overview) > 150 else overview,
             })
@@ -300,6 +310,12 @@ class CohortService:
                             f"Cohort {cohort_id}: analyzing {company_name} ({i+1}/{len(company_names)})"
                         )
                         raw = await self._claude.analyze_company(company_name)
+                        # Build score_factors JSON
+                        sf = None
+                        x_f = raw.get("x_factors")
+                        y_f = raw.get("y_factors")
+                        if x_f or y_f:
+                            sf = json.dumps({"x_factors": x_f or {}, "y_factors": y_f or {}})
                         evaluation = Evaluation(
                             company_name=raw.get("company_name", company_name),
                             zone=raw.get("zone", "unknown"),
@@ -308,6 +324,7 @@ class CohortService:
                             diligence=json.dumps(raw.get("diligence", [])),
                             x_score=raw.get("x_score", 50),
                             y_score=raw.get("y_score", 50),
+                            score_factors=sf,
                         )
                         db.add(evaluation)
                         await db.commit()
@@ -382,6 +399,12 @@ class CohortService:
                             f"Cohort {cohort_id}: analyzing new addition {company_name}"
                         )
                         raw = await self._claude.analyze_company(company_name)
+                        # Build score_factors JSON
+                        sf = None
+                        x_f = raw.get("x_factors")
+                        y_f = raw.get("y_factors")
+                        if x_f or y_f:
+                            sf = json.dumps({"x_factors": x_f or {}, "y_factors": y_f or {}})
                         evaluation = Evaluation(
                             company_name=raw.get("company_name", company_name),
                             zone=raw.get("zone", "unknown"),
@@ -390,6 +413,7 @@ class CohortService:
                             diligence=json.dumps(raw.get("diligence", [])),
                             x_score=raw.get("x_score", 50),
                             y_score=raw.get("y_score", 50),
+                            score_factors=sf,
                         )
                         db.add(evaluation)
                         await db.commit()
@@ -426,6 +450,63 @@ class CohortService:
 
         self._active_tasks.pop(cohort_id, None)
         logger.info(f"Cohort {cohort_id}: append analysis complete")
+
+    async def get_cohort_report_data(self, cohort_id: int, db: AsyncSession) -> dict | None:
+        """Fetch all data needed for PDF report generation (full evaluations)."""
+        cohort = await db.get(Cohort, cohort_id)
+        if not cohort or cohort.status != "complete":
+            return None
+
+        stmt = (
+            select(CohortMember, Evaluation)
+            .join(Evaluation, CohortMember.evaluation_id == Evaluation.id)
+            .where(CohortMember.cohort_id == cohort_id)
+            .order_by(CohortMember.position)
+        )
+        result = await db.execute(stmt)
+        rows = result.all()
+
+        members = []
+        evaluations = []
+        for member, evaluation in rows:
+            diligence = json.loads(evaluation.diligence) if evaluation.diligence else []
+            overview = evaluation.overview or ""
+            score_factors = None
+            if evaluation.score_factors:
+                try:
+                    score_factors = json.loads(evaluation.score_factors)
+                except (json.JSONDecodeError, TypeError):
+                    pass
+
+            members.append({
+                "evaluation_id": evaluation.id,
+                "company_name": evaluation.company_name,
+                "zone": evaluation.zone,
+                "x_score": evaluation.x_score,
+                "y_score": evaluation.y_score,
+                "score_factors": score_factors,
+                "key_risk": diligence[0] if diligence else "N/A",
+                "ai_summary": (overview[:150] + "...") if len(overview) > 150 else overview,
+            })
+
+            evaluations.append({
+                "id": evaluation.id,
+                "company_name": evaluation.company_name,
+                "zone": evaluation.zone,
+                "overview": evaluation.overview or "",
+                "justification": evaluation.justification or "",
+                "diligence": diligence,
+                "x_score": evaluation.x_score,
+                "y_score": evaluation.y_score,
+                "score_factors": score_factors,
+            })
+
+        return {
+            "cohort_name": cohort.name,
+            "cohort_created_at": cohort.created_at.isoformat() if cohort.created_at else None,
+            "members": members,
+            "evaluations": evaluations,
+        }
 
     # ── Helpers ───────────────────────────────────────────────────────────────
 

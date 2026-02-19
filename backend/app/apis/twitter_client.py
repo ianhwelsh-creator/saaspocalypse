@@ -18,14 +18,15 @@ logger = logging.getLogger(__name__)
 
 CURATED_ACCOUNTS: list[dict] = [
     # AI Leaders / Execs
-    {"handle": "elonmusk", "display_name": "Elon Musk"},
     {"handle": "sama", "display_name": "Sam Altman"},
     {"handle": "DarioAmodei", "display_name": "Dario Amodei"},
-    {"handle": "satabordo", "display_name": "Satya Nadella"},
     {"handle": "demishassabis", "display_name": "Demis Hassabis"},
+    {"handle": "satabordo", "display_name": "Satya Nadella"},
     # AI Researchers / Builders
     {"handle": "karpathy", "display_name": "Andrej Karpathy"},
-    {"handle": "levelsio", "display_name": "Pieter Levels"},
+    {"handle": "ylecun", "display_name": "Yann LeCun"},
+    {"handle": "jimfan_", "display_name": "Jim Fan"},
+    {"handle": "swabordo", "display_name": "Swami Sivasubramanian"},
     # Media / Shows
     {"handle": "tbpn", "display_name": "TBPN"},
     {"handle": "thisweekinai_", "display_name": "This Week in AI"},
@@ -33,12 +34,11 @@ CURATED_ACCOUNTS: list[dict] = [
     {"handle": "EricNewcomer", "display_name": "Eric Newcomer"},
     {"handle": "karaswisher", "display_name": "Kara Swisher"},
     {"handle": "kylewiggers", "display_name": "Kyle Wiggers"},
-    {"handle": "alexeheath", "display_name": "Alex Heath"},
     # VCs / Analysts
     {"handle": "ttunguz", "display_name": "Tomasz Tunguz"},
     {"handle": "jasonlk", "display_name": "Jason Lemkin"},
     {"handle": "benedictevans", "display_name": "Benedict Evans"},
-    {"handle": "chamath", "display_name": "Chamath Palihapitiya"},
+    {"handle": "emabordo", "display_name": "Emad Mostaque"},
     # Labs / Orgs
     {"handle": "AnthropicAI", "display_name": "Anthropic"},
     {"handle": "OpenAI", "display_name": "OpenAI"},

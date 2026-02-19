@@ -10,6 +10,7 @@ const ORG_COLORS: Record<string, string> = {
   Mistral: '#ea580c',
   Microsoft: '#0891b2',
   Amazon: '#d49b1a',
+  ByteDance: '#06b6d4',
 }
 
 const ORG_DOMAINS: Record<string, string> = {
@@ -24,6 +25,7 @@ const ORG_DOMAINS: Record<string, string> = {
   Amazon: 'amazon.com',
   Apple: 'apple.com',
   Oracle: 'oracle.com',
+  ByteDance: 'tiktok.com',
 }
 
 function logoUrl(org: string): string {
@@ -71,7 +73,7 @@ export default function ArenaChart({ data, loading }: Props) {
       <div className="space-y-1.5">
         {data.map((m, i) => {
           const pct = ((m.elo_score - minElo) / range) * 100
-          const color = ORG_COLORS[m.organization] || '#8a8480'
+          const color = ORG_COLORS[m.organization] || '#9ca3af'
           const logo = logoUrl(m.organization)
 
           return (

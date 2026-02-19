@@ -6,19 +6,19 @@ export default {
     extend: {
       colors: {
         surface: {
-          primary: '#faf8f5',
+          primary: '#ffffff',
           secondary: '#ffffff',
-          tertiary: '#f2ede6',
-          raised: '#ece6dc',
+          tertiary: '#f8f9fa',
+          raised: '#f1f3f5',
           floating: '#ffffff',
         },
         arena: {
-          text: '#2d2b29',
-          'text-secondary': '#413d39',
-          'text-tertiary': '#666058',
-          muted: '#8a8480',
-          border: '#edebe9',
-          'border-medium': '#e0dbd5',
+          text: '#1a1a2e',
+          'text-secondary': '#3d3d5c',
+          'text-tertiary': '#6b7280',
+          muted: '#9ca3af',
+          border: '#f0f0f0',
+          'border-medium': '#e5e7eb',
           link: '#2b7fd4',
           positive: '#1a9d3f',
           negative: '#d63939',
