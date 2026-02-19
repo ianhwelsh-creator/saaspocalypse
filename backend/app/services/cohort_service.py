@@ -14,6 +14,27 @@ from app.models.db_models import Cohort, CohortMember, Evaluation
 
 logger = logging.getLogger(__name__)
 
+
+def derive_zone(x_score, y_score) -> str:
+    """Derive zone deterministically from scores using a clean 50/50 split.
+
+    X = Workflow Complexity, Y = Data Moat Depth.
+    - Fortress:    x >= 50 AND y >= 50
+    - Compression: x < 50 AND y >= 50
+    - Adaptation:  x >= 50 AND y < 50
+    - Dead Zone:   x < 50 AND y < 50
+    """
+    x = int(x_score) if x_score is not None else 50
+    y = int(y_score) if y_score is not None else 50
+    if x >= 50 and y >= 50:
+        return "fortress"
+    elif x < 50 and y >= 50:
+        return "compression"
+    elif x >= 50 and y < 50:
+        return "adaptation"
+    else:
+        return "dead"
+
 REUSE_THRESHOLD_HOURS = 24
 
 
@@ -131,7 +152,7 @@ class CohortService:
             members.append({
                 "evaluation_id": evaluation.id,
                 "company_name": evaluation.company_name,
-                "zone": evaluation.zone,
+                "zone": derive_zone(evaluation.x_score, evaluation.y_score),
                 "x_score": evaluation.x_score,
                 "y_score": evaluation.y_score,
                 "score_factors": score_factors,
@@ -168,7 +189,7 @@ class CohortService:
             companies.append({
                 "name": evaluation.company_name,
                 "ticker": evaluation.company_name[:4].upper(),
-                "zone": evaluation.zone,
+                "zone": derive_zone(evaluation.x_score, evaluation.y_score),
                 "x": evaluation.x_score,
                 "y": evaluation.y_score,
                 "bullets": bullets or ["No justification available"],
@@ -310,20 +331,36 @@ class CohortService:
                             f"Cohort {cohort_id}: analyzing {company_name} ({i+1}/{len(company_names)})"
                         )
                         raw = await self._claude.analyze_company(company_name)
-                        # Build score_factors JSON
+                        # Build score_factors JSON with question-level detail
                         sf = None
                         x_f = raw.get("x_factors")
                         y_f = raw.get("y_factors")
+                        x_detail = raw.get("x_detail")
+                        y_detail = raw.get("y_detail")
+                        inv_sentiment = raw.get("investment_sentiment")
+                        # Clamp sub-factors and recalculate scores
+                        x_f_clamped = {k: max(0, min(20, v)) for k, v in (x_f or {}).items()}
+                        y_f_clamped = {k: max(0, min(20, v)) for k, v in (y_f or {}).items()}
                         if x_f or y_f:
-                            sf = json.dumps({"x_factors": x_f or {}, "y_factors": y_f or {}})
+                            factors_data = {"x_factors": x_f_clamped, "y_factors": y_f_clamped}
+                            if x_detail:
+                                factors_data["x_detail"] = x_detail
+                            if y_detail:
+                                factors_data["y_detail"] = y_detail
+                            if inv_sentiment:
+                                factors_data["investment_sentiment"] = inv_sentiment
+                            sf = json.dumps(factors_data)
+                        x_sc = sum(x_f_clamped.values()) if x_f_clamped else max(0, min(100, raw.get("x_score", 50)))
+                        y_sc = sum(y_f_clamped.values()) if y_f_clamped else max(0, min(100, raw.get("y_score", 50)))
+
                         evaluation = Evaluation(
                             company_name=raw.get("company_name", company_name),
-                            zone=raw.get("zone", "unknown"),
+                            zone=derive_zone(x_sc, y_sc),
                             overview=raw.get("overview", ""),
                             justification=raw.get("justification", ""),
                             diligence=json.dumps(raw.get("diligence", [])),
-                            x_score=raw.get("x_score", 50),
-                            y_score=raw.get("y_score", 50),
+                            x_score=x_sc,
+                            y_score=y_sc,
                             score_factors=sf,
                         )
                         db.add(evaluation)
@@ -399,20 +436,36 @@ class CohortService:
                             f"Cohort {cohort_id}: analyzing new addition {company_name}"
                         )
                         raw = await self._claude.analyze_company(company_name)
-                        # Build score_factors JSON
+                        # Build score_factors JSON with question-level detail
                         sf = None
                         x_f = raw.get("x_factors")
                         y_f = raw.get("y_factors")
+                        x_detail = raw.get("x_detail")
+                        y_detail = raw.get("y_detail")
+                        inv_sentiment = raw.get("investment_sentiment")
+                        # Clamp sub-factors and recalculate scores
+                        x_f_clamped = {k: max(0, min(20, v)) for k, v in (x_f or {}).items()}
+                        y_f_clamped = {k: max(0, min(20, v)) for k, v in (y_f or {}).items()}
                         if x_f or y_f:
-                            sf = json.dumps({"x_factors": x_f or {}, "y_factors": y_f or {}})
+                            factors_data = {"x_factors": x_f_clamped, "y_factors": y_f_clamped}
+                            if x_detail:
+                                factors_data["x_detail"] = x_detail
+                            if y_detail:
+                                factors_data["y_detail"] = y_detail
+                            if inv_sentiment:
+                                factors_data["investment_sentiment"] = inv_sentiment
+                            sf = json.dumps(factors_data)
+                        x_sc = sum(x_f_clamped.values()) if x_f_clamped else max(0, min(100, raw.get("x_score", 50)))
+                        y_sc = sum(y_f_clamped.values()) if y_f_clamped else max(0, min(100, raw.get("y_score", 50)))
+
                         evaluation = Evaluation(
                             company_name=raw.get("company_name", company_name),
-                            zone=raw.get("zone", "unknown"),
+                            zone=derive_zone(x_sc, y_sc),
                             overview=raw.get("overview", ""),
                             justification=raw.get("justification", ""),
                             diligence=json.dumps(raw.get("diligence", [])),
-                            x_score=raw.get("x_score", 50),
-                            y_score=raw.get("y_score", 50),
+                            x_score=x_sc,
+                            y_score=y_sc,
                             score_factors=sf,
                         )
                         db.add(evaluation)
@@ -481,7 +534,7 @@ class CohortService:
             members.append({
                 "evaluation_id": evaluation.id,
                 "company_name": evaluation.company_name,
-                "zone": evaluation.zone,
+                "zone": derive_zone(evaluation.x_score, evaluation.y_score),
                 "x_score": evaluation.x_score,
                 "y_score": evaluation.y_score,
                 "score_factors": score_factors,
@@ -492,7 +545,7 @@ class CohortService:
             evaluations.append({
                 "id": evaluation.id,
                 "company_name": evaluation.company_name,
-                "zone": evaluation.zone,
+                "zone": derive_zone(evaluation.x_score, evaluation.y_score),
                 "overview": evaluation.overview or "",
                 "justification": evaluation.justification or "",
                 "diligence": diligence,

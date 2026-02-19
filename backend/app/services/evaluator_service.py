@@ -21,25 +21,50 @@ class EvaluatorService:
         """Analyze a company and cache the result."""
         result = await self._claude.analyze_company(company_name)
 
-        # Build score_factors JSON from Claude's response
+        # Build score_factors JSON from Claude's response (clamp each sub-factor to 0-20)
         score_factors = None
         x_factors = result.get("x_factors")
         y_factors = result.get("y_factors")
+        x_detail = result.get("x_detail")
+        y_detail = result.get("y_detail")
+        investment_sentiment = result.get("investment_sentiment")
         if x_factors or y_factors:
-            score_factors = json.dumps({
-                "x_factors": x_factors or {},
-                "y_factors": y_factors or {},
-            })
+            clamped_x = {k: max(0, min(20, v)) for k, v in (x_factors or {}).items()}
+            clamped_y = {k: max(0, min(20, v)) for k, v in (y_factors or {}).items()}
+            factors_data = {
+                "x_factors": clamped_x,
+                "y_factors": clamped_y,
+            }
+            if x_detail:
+                factors_data["x_detail"] = x_detail
+            if y_detail:
+                factors_data["y_detail"] = y_detail
+            if investment_sentiment:
+                factors_data["investment_sentiment"] = investment_sentiment
+            score_factors = json.dumps(factors_data)
+
+        # Recalculate scores from clamped factors if available, otherwise clamp raw scores
+        if x_factors:
+            x_score = sum(max(0, min(20, v)) for v in x_factors.values())
+        else:
+            x_score = max(0, min(100, result.get("x_score", 50)))
+        if y_factors:
+            y_score = sum(max(0, min(20, v)) for v in y_factors.values())
+        else:
+            y_score = max(0, min(100, result.get("y_score", 50)))
+
+        # Derive zone deterministically from scores
+        zone = self._derive_zone(x_score, y_score)
 
         # Save to DB
         evaluation = Evaluation(
             company_name=result.get("company_name", company_name),
-            zone=result.get("zone", "unknown"),
+            zone=zone,
             overview=result.get("overview", ""),
             justification=result.get("justification", ""),
             diligence=json.dumps(result.get("diligence", [])),
-            x_score=result.get("x_score", 50),
-            y_score=result.get("y_score", 50),
+            x_score=x_score,
+            y_score=y_score,
             score_factors=score_factors,
         )
         db.add(evaluation)
@@ -61,12 +86,36 @@ class EvaluatorService:
         return REFERENCE_COMPANIES
 
     @staticmethod
+    def _derive_zone(x_score: int, y_score: int) -> str:
+        """Derive zone deterministically from scores using a clean 50/50 split.
+
+        X-axis = Workflow Complexity, Y-axis = Data Moat Depth.
+        - Fortress:    x >= 50 AND y >= 50
+        - Compression: x < 50 AND y >= 50
+        - Adaptation:  x >= 50 AND y < 50
+        - Dead Zone:   x < 50 AND y < 50
+        """
+        if x_score >= 50 and y_score >= 50:
+            return "fortress"
+        elif x_score < 50 and y_score >= 50:
+            return "compression"
+        elif x_score >= 50 and y_score < 50:
+            return "adaptation"
+        else:
+            return "dead"
+
+    @staticmethod
     def _evaluation_to_dict(e: Evaluation) -> dict:
         """Convert an Evaluation ORM instance to a serializable dict."""
+        # Always derive zone from scores to ensure consistency
+        x = int(e.x_score) if e.x_score is not None else 50
+        y = int(e.y_score) if e.y_score is not None else 50
+        zone = EvaluatorService._derive_zone(x, y)
+
         d = {
             "id": e.id,
             "company_name": e.company_name,
-            "zone": e.zone,
+            "zone": zone,
             "overview": e.overview,
             "justification": e.justification,
             "diligence": json.loads(e.diligence),

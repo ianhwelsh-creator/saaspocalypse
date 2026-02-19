@@ -104,11 +104,36 @@ export default function MatrixChart({ referenceCompanies, evaluation, cohortComp
         // Scale spread based on cluster size so they don't fly too far
         const spreadPct = MIN_SPREAD + (cluster.length - 2) * 0.5
 
+        // Zone boundary in percentage space (50/50 split)
+        const midXPct = toPctX(50)
+        const midYPct = toPctY(50)
+
         cluster.forEach((item, idx) => {
           // Distribute evenly in a circle around the center
           const angle = (idx / cluster.length) * 2 * Math.PI - Math.PI / 2
-          const dxPct = Math.cos(angle) * spreadPct
-          const dyPct = Math.sin(angle) * spreadPct
+          let dxPct = Math.cos(angle) * spreadPct
+          let dyPct = Math.sin(angle) * spreadPct
+
+          // Prevent pushing companies across the 50/50 zone boundary
+          const origC = cohortCompanies![item.index]
+          const baseXPct = item.xPct
+          const baseYPct = item.yPct
+          const newXPct = baseXPct + dxPct
+          const newYPct = baseYPct + dyPct
+
+          // Don't let a company cross the X=50 boundary
+          if (origC.x < 50 && newXPct > midXPct - 1) {
+            dxPct = midXPct - 1 - baseXPct
+          } else if (origC.x >= 50 && newXPct < midXPct + 1) {
+            dxPct = midXPct + 1 - baseXPct
+          }
+          // Don't let a company cross the Y=50 boundary
+          if (origC.y >= 50 && newYPct > midYPct + 1) {
+            dyPct = midYPct + 1 - baseYPct
+          } else if (origC.y < 50 && newYPct < midYPct - 1) {
+            dyPct = midYPct - 1 - baseYPct
+          }
+
           adjustments.set(item.index, {
             dxPct,
             dyPct,
@@ -148,21 +173,25 @@ export default function MatrixChart({ referenceCompanies, evaluation, cohortComp
         {/* Background */}
         <rect x={0} y={0} width={W} height={H} fill="#ffffff" rx={8} />
 
-        {/* Quadrant backgrounds */}
-        <rect x={pad.left} y={toY(50)} width={plotW / 2} height={plotH / 2}
-          fill="#d63939" opacity={0.05} />
-        <rect x={pad.left} y={pad.top} width={plotW / 2} height={plotH / 2}
-          fill="#d49b1a" opacity={0.05} />
-        <rect x={toX(50)} y={toY(50)} width={plotW / 2} height={plotH / 2}
-          fill="#2b7fd4" opacity={0.05} />
-        <rect x={toX(50)} y={pad.top} width={plotW / 2} height={plotH / 2}
-          fill="#1a9d3f" opacity={0.05} />
+        {/* Quadrant backgrounds — clean 4-zone split at 50/50 */}
+        {/* Dead Zone: bottom-left (x<50, y<50) */}
+        <rect x={pad.left} y={toY(50)} width={toX(50) - pad.left} height={pad.top + plotH - toY(50)}
+          fill="#d63939" opacity={0.06} />
+        {/* Compression Zone: top-left (x<50, y>=50) */}
+        <rect x={pad.left} y={pad.top} width={toX(50) - pad.left} height={toY(50) - pad.top}
+          fill="#d49b1a" opacity={0.06} />
+        {/* Adaptation Zone: bottom-right (x>=50, y<50) */}
+        <rect x={toX(50)} y={toY(50)} width={pad.left + plotW - toX(50)} height={pad.top + plotH - toY(50)}
+          fill="#2b7fd4" opacity={0.06} />
+        {/* Fortress Zone: top-right (x>=50, y>=50) */}
+        <rect x={toX(50)} y={pad.top} width={pad.left + plotW - toX(50)} height={toY(50) - pad.top}
+          fill="#1a9d3f" opacity={0.06} />
 
-        {/* Grid lines */}
+        {/* Zone boundary lines at 50 */}
         <line x1={toX(50)} y1={pad.top} x2={toX(50)} y2={pad.top + plotH}
-          stroke="#e5e7eb" strokeDasharray="4 4" />
+          stroke="#d1d5db" strokeDasharray="4 4" />
         <line x1={pad.left} y1={toY(50)} x2={pad.left + plotW} y2={toY(50)}
-          stroke="#e5e7eb" strokeDasharray="4 4" />
+          stroke="#d1d5db" strokeDasharray="4 4" />
 
         {/* Axes */}
         <line x1={pad.left} y1={pad.top + plotH} x2={pad.left + plotW} y2={pad.top + plotH}
@@ -180,7 +209,7 @@ export default function MatrixChart({ referenceCompanies, evaluation, cohortComp
           Data Moat Depth →
         </text>
 
-        {/* Quadrant labels */}
+        {/* Quadrant labels — centered in each zone */}
         <text x={toX(25)} y={toY(25) + 4} textAnchor="middle" fill="#d63939" fontSize={11}
           fontWeight="600" opacity={0.45} fontFamily="Inter, sans-serif">
           DEAD ZONE

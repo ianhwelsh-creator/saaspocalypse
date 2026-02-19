@@ -89,10 +89,19 @@ async def lifespan(app: FastAPI):
     )
     scheduler.start()
 
-    # Initial data load
-    logger.info("Loading initial news data...")
-    await news_aggregator.refresh_news()
-    await news_aggregator.refresh_fundraising()
+    # Initial data load (non-blocking so server starts immediately)
+    import asyncio
+
+    async def _initial_load():
+        try:
+            logger.info("Loading initial news data...")
+            await news_aggregator.refresh_news()
+            await news_aggregator.refresh_fundraising()
+            logger.info("Initial news data loaded")
+        except Exception as e:
+            logger.error(f"Initial news load failed: {e}")
+
+    asyncio.create_task(_initial_load())
 
     logger.info("SaaSpocalypse backend ready")
     yield

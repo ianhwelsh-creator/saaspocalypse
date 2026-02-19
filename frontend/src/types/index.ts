@@ -104,9 +104,21 @@ export interface YFactors {
   proprietary_enrichment: number
 }
 
+export interface QuestionDetail {
+  q1: number
+  q2: number
+  q3: number
+  q4: number
+  math: string
+  rationale: string
+}
+
 export interface ScoreFactors {
   x_factors: XFactors
   y_factors: YFactors
+  x_detail?: Record<string, QuestionDetail>
+  y_detail?: Record<string, QuestionDetail>
+  investment_sentiment?: string
 }
 
 // --- Evaluator ---

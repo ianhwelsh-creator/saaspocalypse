@@ -100,10 +100,10 @@ ZONE_SHORT = {
 }
 
 ZONE_DESCRIPTIONS = {
-    "fortress": "High complexity workflows with deep data moats. These companies are well-protected from AI disruption due to regulatory barriers, entrenched data advantages, and multi-stakeholder processes that resist automation.",
-    "adaptation": "Lower complexity but strong data moats. These companies can likely adapt their products to incorporate AI while maintaining competitive advantages through proprietary data and network effects.",
-    "compression": "Complex workflows but weaker data moats. AI may compress margins by automating processes, though workflow complexity provides some runway. Companies here face medium-term disruption risk.",
-    "dead": "Low complexity and weak data moats. These companies face the highest AI disruption risk as their core workflows are readily automatable and they lack defensible data advantages.",
+    "fortress": "AI-accelerated with strong defensibility (X>=60, Y>=60). Regulated verticals with institutional data moats become orchestration layers for AI agents.",
+    "compression": "Seat-count revenue erosion risk (X<40, Y>60). Valuable data moat but simple workflows mean AI reduces required human seats and compresses pricing power.",
+    "adaptation": "Workflow lock-in, must outpace AI natives (X>60, Y<40). Complex workflows provide runway, but weak data defensibility means AI erodes competitive position over time.",
+    "dead": "High risk of AI obsolescence (X<40, Y<40). Simple tasks with no data defensibility that AI agents can fully automate.",
 }
 
 ZONE_ORDER = {"fortress": 0, "adaptation": 1, "compression": 2, "dead": 3}
@@ -403,61 +403,86 @@ class ReportService:
         chart_w = 210
         chart_h = 140
 
-        half_w = chart_w / 2
-        half_h = chart_h / 2
+        # Helper: convert score 0-100 to chart pixel position
+        def sx(score):
+            return chart_x + (score / 100) * chart_w
 
-        # -- Quadrant backgrounds --
+        def sy(score):
+            return chart_y + chart_h - (score / 100) * chart_h
+
+        # Zone boundary position (clean 50/50 split)
+        x50 = sx(50)
+        y50 = sy(50)
+
+        # -- Quadrant backgrounds (4 clean zones split at 50) --
+        # Dead Zone: bottom-left (x<50, y<50)
         pdf.set_fill_color(*ZONE_BG_COLORS["dead"])
-        pdf.rect(chart_x, chart_y + half_h, half_w, half_h, style="F")
+        pdf.rect(chart_x, y50, x50 - chart_x, chart_y + chart_h - y50, style="F")
 
-        pdf.set_fill_color(*ZONE_BG_COLORS["adaptation"])
-        pdf.rect(chart_x + half_w, chart_y + half_h, half_w, half_h, style="F")
-
+        # Compression Zone: top-left (x<50, y>=50)
         pdf.set_fill_color(*ZONE_BG_COLORS["compression"])
-        pdf.rect(chart_x, chart_y, half_w, half_h, style="F")
+        pdf.rect(chart_x, chart_y, x50 - chart_x, y50 - chart_y, style="F")
 
+        # Adaptation Zone: bottom-right (x>=50, y<50)
+        pdf.set_fill_color(*ZONE_BG_COLORS["adaptation"])
+        pdf.rect(x50, y50, chart_x + chart_w - x50, chart_y + chart_h - y50, style="F")
+
+        # Fortress Zone: top-right (x>=50, y>=50)
         pdf.set_fill_color(*ZONE_BG_COLORS["fortress"])
-        pdf.rect(chart_x + half_w, chart_y, half_w, half_h, style="F")
+        pdf.rect(x50, chart_y, chart_x + chart_w - x50, y50 - chart_y, style="F")
 
         # -- Border --
         pdf.set_draw_color(180, 180, 180)
         pdf.set_line_width(0.3)
         pdf.rect(chart_x, chart_y, chart_w, chart_h)
 
-        # -- Dashed center lines --
+        # -- Dashed zone boundary lines at 50 --
         pdf.set_draw_color(190, 190, 190)
         pdf.set_line_width(0.2)
         step = 3
+        # Vertical line at x=50
         pos = chart_y
         while pos < chart_y + chart_h:
             end = min(pos + step * 0.5, chart_y + chart_h)
-            pdf.line(chart_x + half_w, pos, chart_x + half_w, end)
+            pdf.line(x50, pos, x50, end)
             pos += step
+        # Horizontal line at y=50
         pos = chart_x
         while pos < chart_x + chart_w:
             end = min(pos + step * 0.5, chart_x + chart_w)
-            pdf.line(pos, chart_y + half_h, end, chart_y + half_h)
+            pdf.line(pos, y50, end, y50)
             pos += step
 
-        # -- Quadrant labels (watermark style) --
-        pdf.set_font("Helvetica", "B", 14)
-        inset = 6
+        # -- Quadrant labels (watermark style, centered in each quadrant) --
+        pdf.set_font("Helvetica", "B", 12)
 
+        # Dead Zone: center of bottom-left quadrant
         pdf.set_text_color(214, 57, 57)
-        pdf.set_xy(chart_x + inset, chart_y + half_h + half_h - 16)
-        pdf.cell(half_w - inset * 2, 10, "DEAD ZONE", align="C")
+        dead_cx = chart_x + (x50 - chart_x) / 2
+        dead_cy = y50 + (chart_y + chart_h - y50) / 2
+        pdf.set_xy(dead_cx - 25, dead_cy - 5)
+        pdf.cell(50, 10, "DEAD ZONE", align="C")
 
+        # Adaptation: center of bottom-right quadrant
         pdf.set_text_color(43, 127, 212)
-        pdf.set_xy(chart_x + half_w + inset, chart_y + half_h + half_h - 16)
-        pdf.cell(half_w - inset * 2, 10, "ADAPTATION", align="C")
+        adapt_cx = x50 + (chart_x + chart_w - x50) / 2
+        adapt_cy = dead_cy
+        pdf.set_xy(adapt_cx - 25, adapt_cy - 5)
+        pdf.cell(50, 10, "ADAPTATION", align="C")
 
+        # Compression: center of top-left quadrant
         pdf.set_text_color(212, 155, 26)
-        pdf.set_xy(chart_x + inset, chart_y + 6)
-        pdf.cell(half_w - inset * 2, 10, "COMPRESSION", align="C")
+        comp_cx = dead_cx
+        comp_cy = chart_y + (y50 - chart_y) / 2
+        pdf.set_xy(comp_cx - 30, comp_cy - 5)
+        pdf.cell(60, 10, "COMPRESSION", align="C")
 
+        # Fortress: center of top-right quadrant
         pdf.set_text_color(26, 157, 63)
-        pdf.set_xy(chart_x + half_w + inset, chart_y + 6)
-        pdf.cell(half_w - inset * 2, 10, "FORTRESS", align="C")
+        fort_cx = adapt_cx
+        fort_cy = comp_cy
+        pdf.set_xy(fort_cx - 25, fort_cy - 5)
+        pdf.cell(50, 10, "FORTRESS", align="C")
 
         # -- Axis labels --
         pdf.set_font("Helvetica", "B", 10)
@@ -476,14 +501,14 @@ class ReportService:
 
         pdf.set_xy(chart_x, chart_y + chart_h + 1)
         pdf.cell(10, 4, "0")
-        pdf.set_xy(chart_x + half_w - 5, chart_y + chart_h + 1)
+        pdf.set_xy(x50 - 5, chart_y + chart_h + 1)
         pdf.cell(10, 4, "50", align="C")
         pdf.set_xy(chart_x + chart_w - 12, chart_y + chart_h + 1)
         pdf.cell(12, 4, "100", align="R")
 
         pdf.set_xy(chart_x - 12, chart_y + chart_h - 5)
         pdf.cell(10, 4, "0", align="R")
-        pdf.set_xy(chart_x - 12, chart_y + half_h - 2)
+        pdf.set_xy(chart_x - 12, y50 - 2)
         pdf.cell(10, 4, "50", align="R")
         pdf.set_xy(chart_x - 12, chart_y - 1)
         pdf.cell(10, 4, "100", align="R")
@@ -728,7 +753,7 @@ class ReportService:
 
             # Draw bars on the left
             for i, (key, label) in enumerate(factor_labels):
-                val = factors.get(key, 0)
+                val = max(0, min(20, factors.get(key, 0)))
                 bar_color = _score_color(val, 20)
                 y = pdf.get_y()
 
@@ -744,8 +769,8 @@ class ReportService:
                 pdf.set_fill_color(230, 230, 230)
                 pdf.rect(bar_x, bar_y, bar_max_w, bar_h, style="F")
 
-                # Bar fill with gradient color
-                fill_w = bar_max_w * (val / 20)
+                # Bar fill with gradient color (clamp to max width)
+                fill_w = min(bar_max_w, bar_max_w * (val / 20))
                 if fill_w > 0:
                     pdf.set_fill_color(*bar_color)
                     pdf.rect(bar_x, bar_y, fill_w, bar_h, style="F")
@@ -764,7 +789,7 @@ class ReportService:
             spider_cx = pdf.w - pdf.r_margin - spider_radius - 12
             spider_cy = bars_start_y + (bars_end_y - bars_start_y) / 2
             n = len(factor_labels)
-            vals = [factors.get(k, 0) for k, _ in factor_labels]
+            vals = [max(0, min(20, factors.get(k, 0))) for k, _ in factor_labels]
             spider_labels = [lbl for _, lbl in factor_labels]
 
             self._draw_spider(pdf, spider_cx, spider_cy, spider_radius, vals, 20, spider_labels)
@@ -845,7 +870,14 @@ class ReportService:
             lbl = labels[i]
 
             # Split label into two lines for side vertices
-            words = lbl.split(" ")
+            # Split on space first, then try hyphen for words like "Multi-Stakeholder"
+            if " " in lbl:
+                words = lbl.split(" ")
+            elif "-" in lbl:
+                parts = lbl.split("-")
+                words = [parts[0] + "-", parts[1]]
+            else:
+                words = [lbl]
             if len(words) >= 2 and abs(cos_a) > 0.2:
                 line1 = words[0]
                 line2 = " ".join(words[1:])

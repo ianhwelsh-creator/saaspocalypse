@@ -83,9 +83,20 @@ class ReferenceCompany(BaseModel):
     bullets: list[str]
     logo_url: str | None = None
 
+class QuestionDetail(BaseModel):
+    q1: int
+    q2: int
+    q3: int
+    q4: int
+    math: str
+    rationale: str
+
 class ScoreFactors(BaseModel):
     x_factors: dict[str, int] = {}
     y_factors: dict[str, int] = {}
+    x_detail: dict[str, QuestionDetail] | None = None
+    y_detail: dict[str, QuestionDetail] | None = None
+    investment_sentiment: str | None = None
 
 class EvaluationResponse(BaseModel):
     id: int | None = None
